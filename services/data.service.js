@@ -1,3 +1,7 @@
+//import jsonwebtoken
+const jwt=require('jsonwebtoken')
+
+
 // angular l define cheytha database cpy pst cheythu server le dataservice n paranje folder l
 database = {
     1000: { acno: 1000, uname: "neer", pswd: 1000, balance: 5000,transaction:[] },
@@ -41,13 +45,22 @@ const login=(acno, pswd)=> {
   if (acno in database) {
     if (pswd == database[acno]["pswd"]) {
       currentAcno=acno 
-      currentUname=database[acno]["uname"] 
+      currentUname=database[acno]["uname"] //login ivideyaann success aavunne
+
+// token generation
+const token=jwt.sign({  
+  currentAcno:acno     //key:value
+},"supersecretkey")
+
+
       return {
         statusCode:200,
         status:true,
         message:"successfully log in...",
         currentAcno,
-        currentUname
+        currentUname,
+        //eni ee tokene client lekk return cheyyikkanam
+        token
       }
     }
     else {
@@ -105,11 +118,81 @@ const deposit=(acno, pswd, amount)=> { // function definition aayond type specif
   }
 }
 
+// Withdraw definition
 
+const withdraw=(acno, pswd, amount)=> { // function definition aayond type specify cheyyanm.
+
+  var amt = parseInt(amount)  // type string nn int lekk maattan use aakkiye.
+
+  if (acno in database) {
+    if (pswd == database[acno]["pswd"]) {
+      if (database[acno]["balance"] > amt) {
+        database[acno]["balance"] -= amt
+
+// eppellam withdraw success aavum aa tym okke transaction history lekk add cheyyanam.
+        database[acno]["transaction"].push({
+          amount:amount,
+          type:"DEBIT"
+        
+        })
+        
+         return {
+          statusCode:200,
+          status:true,
+          message:amount+"successfully debitted.... and new balance is"+database[acno]["balance"]
+      }
+      }
+      else {
+        return {
+          statusCode:422,
+          status:false,
+          message:"insufficient balance"
+        }
+      }
+    }
+    else {
+      return {
+        statusCode:422,
+        status:false,
+        message:"incorrect password"
+      }
+    }
+  }
+  else {
+    return {
+      statusCode:422,
+      status:false,
+      message:"user does not exist!!!"
+    }
+  }
+}
+
+
+// transaction history definition
+
+const getTransaction=(acno)=>{
+  if(acno in database)
+  {
+    return {
+      statusCode:200,
+      status:true,
+      transaction:database[acno]["transaction"]
+    }
+  }
+  else{
+    return {
+      statusCode:422,
+      status:false,
+      message:"user does not exist!!!"
+    }
+   }
+  }
 
   // method ne export cheyyaan karanam front end l ee cls okke export class l aayirikkum indaaval so athine back end l kittaan vendii.
   module.exports={
       register,
       login,
-      deposit
+      deposit,
+      withdraw,
+      getTransaction
   }

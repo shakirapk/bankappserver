@@ -1,8 +1,13 @@
 // import xpress
 const express=require('express')
+const jsonwebtoken = require('jsonwebtoken')
 
 // back end le data.service.js n ille fldr import cheythu
 const dataService=require('./services/data.service')
+
+// jsonwebtoken import cheyyanam
+const jwt=require('jsonwebtoken')
+const res = require('express/lib/response')
 
 // create an app using  express
 
@@ -50,8 +55,45 @@ app.listen(3000,()=>{
 })
 
 
+// APPLICATION SPECIFIC MIDDLEWARE
+
+const appMiddleware=(req,res,next)=>{
+    console.log("application specific middleware");
+    next()   // next() use aakkiyaal maatre next kodukkunna request execute cheyyuuu
+}
+app.use(appMiddleware)
 
 // BANK APP -API
+
+
+// to verify token - middleware (ROUTER SPECIFIC MIDDLEWARE)
+
+const jwtMiddleware=(req,res,next)=>{
+
+    try{
+
+// step:1 - request nn token eduthitt middleware le oru variable athine assign cheyyanam,ee token request nte body laann indaaval
+// const token=req.body.token
+// ee token n parayunneth okke authorize cheyyunna kaaryangal aann so athokke request head l keep cheyyandaa saadhanangal aann so athine request nte head portion l kodukkaan vendii
+// aa token nte name matram cpy cheyuka ennitt headers n ille section l oru name "x-access-token" kodukkuka then value nte place l a token pste cheyyuka.then aa name "x-access-token"
+//eduthitt middleware le oru variable athine assign cheyyanam,ee token request nte header laann indaaval
+const token=req.headers["x-access-token"]
+// step:2 - now ee token verify cheyyanam athinaayitt jsonwebtoken n paranje library import cheyyanam.
+const data=jwt.verify(token,"supersecretkey")
+req.currentAcno=data.currentAcno
+next()
+// ennitt ee jwtMiddleware ne ethokke request laanno vende avide okke place cheyyuka
+
+}
+catch{
+    res.status(422).json({
+        statusCode:422,
+        status:false,
+        message:"please log in..."
+    })
+}
+}
+
 
 // REGISTER APT 
 
@@ -71,8 +113,26 @@ app.post('/login',(req,res)=>{    //ith call back function aann athayath oru fun
 
 // DEPOSIT APT 
 
-app.post('/deposit',(req,res)=>{    //ith call back function aann athayath oru function nte ullil vere oru function define cheythath.
+app.post('/deposit',jwtMiddleware,(req,res)=>{    //ith call back function aann athayath oru function nte ullil vere oru function define cheythath.
 
     const result=dataService.deposit(req.body.acno,req.body.pswd,req.body.amount)
     res.status(result.statusCode).json(result)
 })
+
+
+// WITHDRAW API
+
+app.post('/withdraw',jwtMiddleware,(req,res)=>{    //ith call back function aann athayath oru function nte ullil vere oru function define cheythath.
+
+    const result=dataService.withdraw(req.body.acno,req.body.pswd,req.body.amount)
+    res.status(result.statusCode).json(result)
+})
+
+// TRANSACTION HISTORY API
+
+app.post('/transaction',jwtMiddleware,(req,res)=>{    //ith call back function aann athayath oru function nte ullil vere oru function define cheythath.
+
+    const result=dataService.getTransaction(req.body.acno)
+    res.status(result.statusCode).json(result)
+})
+
